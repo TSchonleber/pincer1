@@ -1,0 +1,20 @@
+name: dock-flake-probe
+on: push
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: robot
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+      - run: sudo apt-get install -y --no-install-recommends portaudio19-dev
+      - run: python -m pip install -q -e ".[dev]"
+      - run: |
+          f=0
+          for i in $(seq 1 40); do python -m pytest -q -p no:warnings tests/test_dock.py > /tmp/out.txt 2>&1 || { f=$((f+1)); grep -E "^FAILED" /tmp/out.txt | head -2; }; done
+          echo "RESULT dock-cancel test_dock: $f of 40 runs failed"
+      - run: python -m pytest -q
